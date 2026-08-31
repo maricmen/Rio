@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Rios Stundenplan</title>
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Rio">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+:root{
+  --bg:#000; --surf:#0d0d0d; --surf2:#141414; --line:#2a2a2a; --line2:#3a3a3a;
+  --ink:#f2f2f2; --ink2:#9a9a9a; --ink3:#5f5f5f;
+  --acid:#c9ff2e;
+  --mono:"SFMono-Regular",ui-monospace,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:"Helvetica Neue",Arial,system-ui,sans-serif;
+  --c-mathe:#35e0a1; --c-english:#4aa8ff; --c-computer:#4aa8ff; --c-deutsch:#d8cfb4;
+  --c-studien:#d8cfb4; --c-musik:#a78bfa; --c-spanisch:#a78bfa; --c-kunst:#f472b6;
+  --c-welt:#fb7a4b; --c-news:#f5b03e; --c-konsult:#f5b03e; --c-chemie:#f5b03e;
+  --c-sport:#a3e635; --c-geo:#a3e635; --c-schuelver:#ff8ac2; --c-team:#fb7a4b;
+  --c-sprechzeit:#7fb0c9; --c-fitness:#ff5470; --c-sonstiges:#c9ff2e;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg)}
+body{color:var(--ink); font-family:var(--sans); line-height:1.3; -webkit-font-smoothing:antialiased;
+  padding:0 0 120px; padding-top:env(safe-area-inset-top); max-width:720px; margin:0 auto; min-height:100vh;}
+.wrap{padding:20px 16px 0}
+.mast{border-bottom:3px solid var(--ink); padding-bottom:12px; margin-bottom:2px}
+.mast h1{font-family:var(--sans); font-weight:800; font-size:40px; letter-spacing:-.02em; line-height:.9; text-transform:uppercase}
+.mast h1 .pl{display:block; font-size:15px; font-weight:800; letter-spacing:.34em; margin-top:8px; color:var(--ink2)}
+.mast .q{font-family:var(--mono); font-size:11px; color:var(--ink3); text-transform:uppercase; letter-spacing:.12em; margin-top:10px}
+.toggle{display:flex; gap:0; margin:16px 0 14px; border:2px solid var(--ink)}
+.toggle button{flex:1; font-family:var(--mono); font-weight:700; font-size:12px; letter-spacing:.15em;
+  text-transform:uppercase; background:transparent; color:var(--ink); border:0; padding:11px 0; cursor:pointer}
+.toggle button+button{border-left:2px solid var(--ink)}
+.toggle button.on{background:var(--acid); color:#000}
+.days{display:flex; gap:6px; margin-bottom:16px}
+.days button{flex:1; font-family:var(--mono); font-weight:700; font-size:13px; letter-spacing:.1em;
+  background:var(--surf); color:var(--ink2); border:1.5px solid var(--line2); padding:10px 0; cursor:pointer; text-transform:uppercase}
+.days button.on{background:var(--ink); color:#000; border-color:var(--ink)}
+.days button.today{border-color:var(--acid)}
+.days button.today.on{background:var(--acid); border-color:var(--acid)}
+#dayview{display:flex; flex-direction:column; gap:8px}
+.blk{position:relative; background:var(--surf); border:1px solid var(--line);
+  border-left:6px solid var(--cat,#666); padding:12px 14px; display:flex; gap:14px; align-items:baseline}
+.blk .tm{font-family:var(--mono); font-size:12px; color:var(--ink2); white-space:nowrap; min-width:96px; letter-spacing:.02em}
+.blk .tm b{color:var(--ink); font-weight:700}
+.blk .bd{flex:1; min-width:0}
+.blk .ti{font-weight:700; font-size:16px; letter-spacing:-.01em; line-height:1.15}
+.blk .rm{font-family:var(--mono); font-size:11px; color:var(--ink2); margin-top:4px; text-transform:uppercase; letter-spacing:.05em; white-space:pre-line}
+.blk .cat{position:absolute; top:10px; right:12px; font-family:var(--mono); font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:var(--cat,#666)}
+.blk.core .ti::after{content:"●"; color:var(--acid); font-size:10px; vertical-align:middle; margin-left:8px}
+.blk.custom{border-style:dashed}
+.blk .del{position:absolute; bottom:8px; right:10px; font-family:var(--mono); font-size:10px; color:var(--ink3);
+  background:transparent; border:1px solid var(--line2); padding:2px 7px; cursor:pointer; text-transform:uppercase; letter-spacing:.08em}
+.blk .del:hover{color:var(--c-fitness); border-color:var(--c-fitness)}
+.lunch{font-family:var(--mono); font-size:10px; letter-spacing:.3em; text-transform:uppercase; color:var(--ink3);
+  text-align:center; padding:8px 0; border-top:1px dashed var(--line2); border-bottom:1px dashed var(--line2)}
+.empty-day{font-family:var(--mono); font-size:12px; color:var(--ink3); text-transform:uppercase; letter-spacing:.1em; text-align:center; padding:40px 0; border:1px dashed var(--line2)}
+#weekview{overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 -16px; padding:0 16px}
+.wgrid{display:grid; grid-template-columns:58px repeat(5,minmax(96px,1fr)); gap:2px; min-width:560px}
+.wh{font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; background:var(--ink); color:#000; padding:8px 4px; text-align:center}
+.wt{font-family:var(--mono); font-size:9.5px; color:var(--ink3); display:flex; align-items:center; justify-content:center; text-align:center; padding:4px 2px; line-height:1.25}
+.wc{background:var(--surf); border:1px solid var(--line); border-left:4px solid var(--cat,transparent); padding:6px 7px; min-height:54px; font-size:11px}
+.wc.blank{background:transparent; border-color:var(--line); border-left-color:transparent}
+.wc .wti{font-weight:700; font-size:11px; line-height:1.2}
+.wc .wrm{font-family:var(--mono); font-size:9px; color:var(--ink2); margin-top:3px; text-transform:uppercase; white-space:pre-line}
+.wc.core .wti::after{content:"●"; color:var(--acid); font-size:8px; margin-left:4px; vertical-align:middle}
+.wc.custom{border-style:dashed}
+.wlunch{grid-column:2 / span 5; background:var(--surf2); font-family:var(--mono); font-size:9px; letter-spacing:.25em; text-transform:uppercase; color:var(--ink3); text-align:center; padding:5px; min-height:0}
+.fab{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(20px + env(safe-area-inset-bottom));
+  background:var(--acid); color:#000; font-family:var(--mono); font-weight:700; font-size:13px; letter-spacing:.1em;
+  text-transform:uppercase; border:0; padding:14px 26px; cursor:pointer; box-shadow:0 0 0 2px #000, 0 8px 0 -2px #333; max-width:calc(100% - 32px)}
+.fab:active{transform:translateX(-50%) translateY(2px)}
+.modal{position:fixed; inset:0; background:rgba(0,0,0,.82); display:none; align-items:flex-end; justify-content:center; z-index:20}
+.modal.on{display:flex}
+.sheet{background:var(--bg); border:2px solid var(--ink); width:100%; max-width:720px; padding:20px 16px calc(20px + env(safe-area-inset-bottom))}
+.sheet h2{font-family:var(--sans); font-weight:800; text-transform:uppercase; font-size:20px; letter-spacing:-.01em; margin-bottom:16px; border-bottom:2px solid var(--ink); padding-bottom:10px}
+.fld{margin-bottom:12px}
+.fld label{display:block; font-family:var(--mono); font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink2); margin-bottom:5px}
+.fld input,.fld select{width:100%; background:var(--surf); border:1.5px solid var(--line2); color:var(--ink); font-family:var(--mono); font-size:15px; padding:11px 12px; -webkit-appearance:none; border-radius:0}
+.fld input:focus,.fld select:focus{outline:none; border-color:var(--acid)}
+.row2{display:flex; gap:10px} .row2 .fld{flex:1}
+.sheet-actions{display:flex; gap:10px; margin-top:8px}
+.btn{flex:1; font-family:var(--mono); font-weight:700; font-size:13px; letter-spacing:.1em; text-transform:uppercase; padding:14px 0; cursor:pointer; border:2px solid var(--ink)}
+.btn.ghost{background:transparent; color:var(--ink)} .btn.go{background:var(--acid); color:#000; border-color:var(--acid)}
+.foot{font-family:var(--mono); font-size:10px; color:var(--ink3); text-align:center; margin-top:26px; text-transform:uppercase; letter-spacing:.12em}
+/* lock screen */
+.lock{position:fixed; inset:0; z-index:50; background:#000; display:flex; align-items:center; justify-content:center; padding:24px}
+.lockbox{width:100%; max-width:320px; text-align:center}
+.lockmark{font-family:var(--sans); font-weight:800; font-size:64px; letter-spacing:-.03em; text-transform:uppercase; line-height:1}
+.lockmark span{color:var(--acid)}
+.locksub{font-family:var(--mono); font-size:11px; letter-spacing:.3em; text-transform:uppercase; color:var(--ink3); margin:14px 0 20px}
+#pw{width:100%; background:var(--surf); border:2px solid var(--line2); color:var(--ink); font-family:var(--mono); font-size:18px; text-align:center; padding:14px; letter-spacing:.1em; -webkit-appearance:none; border-radius:0}
+#pw:focus{outline:none; border-color:var(--acid)}
+.lockbtn{width:100%; margin-top:12px; background:var(--acid); color:#000; border:0; font-family:var(--mono); font-weight:700; font-size:14px; letter-spacing:.15em; text-transform:uppercase; padding:15px; cursor:pointer}
+.lockbtn:active{transform:translateY(1px)}
+.lockerr{font-family:var(--mono); font-size:11px; color:var(--c-fitness); text-transform:uppercase; letter-spacing:.1em; margin-top:14px; min-height:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="mast"><h1>Rio<span class="pl">Stundenplan</span></h1><div class="q"></div></div>
+  <div class="toggle" id="toggle"><button data-v="day" class="on">Tag</button><button data-v="week">Woche</button></div>
+  <div class="days" id="days"></div>
+  <div id="dayview"></div>
+  <div id="weekview" hidden></div>
+  <div class="foot">Rio</div>
+</div>
+<button class="fab" id="fab">+ Aktivität</button>
+<div class="modal" id="modal"><div class="sheet">
+  <h2>Aktivität hinzufügen</h2>
+  <div class="fld"><label>Was</label><input id="f-title" type="text" placeholder="z.B. Schlagzeug, Fitness" autocomplete="off"></div>
+  <div class="row2">
+    <div class="fld"><label>Tag</label><select id="f-day">
+      <option value="Mo">Montag</option><option value="Di">Dienstag</option><option value="Mi">Mittwoch</option>
+      <option value="Do">Donnerstag</option><option value="Fr">Freitag</option><option value="Sa">Samstag</option><option value="So">Sonntag</option>
+    </select></div>
+    <div class="fld"><label>Kategorie</label><select id="f-cat">
+      <option value="fitness">Fitness</option><option value="musik">Musik</option><option value="sport">Sport</option>
+      <option value="sonstiges">Sonstiges</option><option value="mathe">Mathe</option><option value="english">Englisch</option>
+      <option value="deutsch">Deutsch</option><option value="kunst">Kunst</option>
+    </select></div>
+  </div>
+  <div class="row2"><div class="fld"><label>Von</label><input id="f-start" type="time" value="17:30"></div>
+    <div class="fld"><label>Bis</label><input id="f-end" type="time" value="18:00"></div></div>
+  <div class="fld"><label>Ort (optional)</label><input id="f-room" type="text" placeholder="z.B. Musikschule" autocomplete="off"></div>
+  <div class="sheet-actions"><button class="btn ghost" id="f-cancel">Abbrechen</button><button class="btn go" id="f-save">Speichern</button></div>
+</div></div>
+
+<div class="lock" id="lock"><div class="lockbox">
+  <div class="lockmark">Ri<span>o</span></div>
+  <div class="locksub">Passwort</div>
+  <input id="pw" type="password" autocomplete="current-password" placeholder="••••••">
+  <button class="lockbtn" id="open">Öffnen</button>
+  <div class="lockerr" id="lockerr"></div>
+</div></div>
+
+<script>
+var PAY={salt:"+6fIaPKxBan40/pNvPiEfw==",iv:"emAm+Y2YQv98KbG3",ct:"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",iter:200000};
+var DAYS=["Mo","Di","Mi","Do","Fr"];
+var CATLABEL={mathe:"Mathe",english:"Englisch",computer:"Computer",deutsch:"Deutsch",studien:"Studienzeit",
+  musik:"Musik",spanisch:"Spanisch",kunst:"Kunst",welt:"Welt",news:"News",konsult:"Konsult",chemie:"Chemie",
+  sport:"Sport",geo:"Geo",schuelver:"Schüler",team:"Team",sprechzeit:"Sprechzeit",fitness:"Fitness",sonstiges:"Extra"};
+function catColor(c){return getComputedStyle(document.documentElement).getPropertyValue('--c-'+c).trim()||'#666';}
+var BASE=[];
+var LS="rio-custom-v1";
+function loadCustom(){try{return JSON.parse(localStorage.getItem(LS))||[]}catch(e){return[]}}
+function saveCustom(a){localStorage.setItem(LS,JSON.stringify(a));}
+function allEntries(){return BASE.concat(loadCustom().map(function(c){c.custom=true;return c;}));}
+function byStart(a,b){return a.s<b.s?-1:a.s>b.s?1:0;}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+function renderDay(day){
+  var dv=document.getElementById('dayview');
+  var items=allEntries().filter(function(x){return x.day===day;}).sort(byStart);
+  if(!items.length){dv.innerHTML='<div class="empty-day">Frei · nichts geplant</div>';return;}
+  var html=''; var lunchDone=false;
+  items.forEach(function(x){
+    if(!lunchDone && x.s>="13:00"){html+='<div class="lunch">Mittagessen</div>';lunchDone=true;}
+    var col=catColor(x.cat);
+    var del=x.custom?'<button class="del" data-id="'+x.id+'">löschen</button>':'';
+    html+='<div class="blk'+(x.core?' core':'')+(x.custom?' custom':'')+'" style="--cat:'+col+'">'
+      +'<div class="tm"><b>'+x.s+'</b><br>'+x.e+'</div>'
+      +'<div class="bd"><div class="ti">'+esc(x.t)+'</div>'+(x.r?'<div class="rm">'+esc(x.r)+'</div>':'')+'</div>'
+      +'<div class="cat">'+(CATLABEL[x.cat]||x.cat)+'</div>'+del+'</div>';
+  });
+  dv.innerHTML=html;
+  Array.prototype.forEach.call(dv.querySelectorAll('.del'),function(b){
+    b.onclick=function(){var a=loadCustom().filter(function(c){return c.id!=b.dataset.id;});saveCustom(a);render();};
+  });
+}
+function renderWeek(){
+  var wv=document.getElementById('weekview'), ents=allEntries(), slots=[];
+  ents.forEach(function(x){var k=x.s+'|'+x.e;if(slots.indexOf(k)<0)slots.push(k);});
+  slots.sort();
+  var html='<div class="wgrid"><div class="wh" style="background:transparent;color:var(--ink3)">Zeit</div>';
+  DAYS.forEach(function(d){html+='<div class="wh">'+d+'</div>';});
+  var lunchDone=false;
+  slots.forEach(function(k){
+    var s=k.split('|')[0], e=k.split('|')[1];
+    if(!lunchDone && s>="13:00"){html+='<div class="wt"></div><div class="wlunch">Mittagessen</div>';lunchDone=true;}
+    html+='<div class="wt">'+s+'<br>'+e+'</div>';
+    DAYS.forEach(function(d){
+      var m=ents.filter(function(x){return x.day===d&&x.s===s&&x.e===e;});
+      if(!m.length){html+='<div class="wc blank"></div>';return;}
+      var x=m[0], col=catColor(x.cat);
+      html+='<div class="wc'+(x.core?' core':'')+(x.custom?' custom':'')+'" style="--cat:'+col+'">'
+        +'<div class="wti">'+esc(x.t)+'</div>'+(x.r?'<div class="wrm">'+esc(x.r.split('\n')[0])+'</div>':'')+'</div>';
+    });
+  });
+  html+='</div>'; wv.innerHTML=html;
+}
+var curDay=(function(){var g=new Date().getDay();return (g>=1&&g<=5)?DAYS[g-1]:"Mo";})();
+var curView="day";
+function render(){ if(curView==="day"){renderDay(curDay);} else {renderWeek();} }
+function buildDays(){
+  var el=document.getElementById('days'); el.innerHTML='';
+  var today=(function(){var g=new Date().getDay();return (g>=1&&g<=5)?DAYS[g-1]:null;})();
+  DAYS.forEach(function(d){
+    var b=document.createElement('button'); b.textContent=d;
+    if(d===today)b.classList.add('today'); if(d===curDay)b.classList.add('on');
+    b.onclick=function(){curDay=d;buildDays();render();};
+    el.appendChild(b);
+  });
+}
+document.getElementById('toggle').addEventListener('click',function(e){
+  var b=e.target.closest('button'); if(!b)return; curView=b.dataset.v;
+  Array.prototype.forEach.call(this.children,function(c){c.classList.toggle('on',c===b);});
+  document.getElementById('dayview').hidden=curView!=="day";
+  document.getElementById('weekview').hidden=curView!=="week";
+  document.getElementById('days').style.display=curView==="day"?"":"none";
+  render();
+});
+var modal=document.getElementById('modal');
+document.getElementById('fab').onclick=function(){var v=document.getElementById('f-day');v.value=(curDay==="Sa"||curDay==="So")?"Di":curDay;modal.classList.add('on');};
+document.getElementById('f-cancel').onclick=function(){modal.classList.remove('on');};
+modal.onclick=function(e){if(e.target===modal)modal.classList.remove('on');};
+document.getElementById('f-save').onclick=function(){
+  var t=document.getElementById('f-title').value.trim(); if(!t){document.getElementById('f-title').focus();return;}
+  var ent={id:'c'+(loadCustom().reduce(function(m,c){return Math.max(m,+String(c.id).slice(1)||0);},0)+1),
+    day:document.getElementById('f-day').value, s:document.getElementById('f-start').value, e:document.getElementById('f-end').value,
+    t:t, r:document.getElementById('f-room').value.trim(), cat:document.getElementById('f-cat').value};
+  var a=loadCustom(); a.push(ent); saveCustom(a);
+  document.getElementById('f-title').value=''; document.getElementById('f-room').value=''; modal.classList.remove('on');
+  if(DAYS.indexOf(ent.day)>=0){curView="day";curDay=ent.day;
+    document.querySelectorAll('#toggle button').forEach(function(c){c.classList.toggle('on',c.dataset.v==="day");});
+    document.getElementById('dayview').hidden=false;document.getElementById('weekview').hidden=true;
+    document.getElementById('days').style.display="";buildDays();}
+  render();
+};
+
+/* ---- lock / decrypt ---- */
+function b64d(s){var bin=atob(s);var u=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u;}
+async function decrypt(pw){
+  var km=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
+  var key=await crypto.subtle.deriveKey({name:'PBKDF2',salt:b64d(PAY.salt),iterations:PAY.iter,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['decrypt']);
+  var pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:b64d(PAY.iv)},key,b64d(PAY.ct));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+async function tryUnlock(pw,remember){
+  try{
+    var data=await decrypt(pw);
+    BASE=data.schedule; document.querySelector('.q').textContent=data.quartal||'';
+    if(remember) localStorage.setItem('rio-pw',pw);
+    document.getElementById('lock').style.display='none';
+    buildDays(); render(); return true;
+  }catch(e){ return false; }
+}
+document.getElementById('open').onclick=async function(){
+  var pw=document.getElementById('pw').value;
+  document.getElementById('lockerr').textContent='';
+  var ok=await tryUnlock(pw,true);
+  if(!ok) document.getElementById('lockerr').textContent='Falsches Passwort';
+};
+document.getElementById('pw').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('open').click();});
+(function(){var saved=localStorage.getItem('rio-pw'); if(saved){tryUnlock(saved,false).then(function(ok){if(!ok)localStorage.removeItem('rio-pw');});}
+  else{setTimeout(function(){document.getElementById('pw').focus();},200);}})();
+</script>
+</body>
+</html>
